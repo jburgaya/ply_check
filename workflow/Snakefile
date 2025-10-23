@@ -18,12 +18,13 @@ samples = _read_samples(config["samples"])
 # ----- start execution of the rules ----- #
 
 rule all:
-  input:
-    expand("out/blast/{sample}.tsv", sample=samples),
-    "out/alleles.fasta",
-    "out/aa_unaln.fasta",
-    "out/aa_aln.fasta",
-    "out/aa_changes.tsv"
+    input:
+        expand("out/blast/{sample}.tsv", sample=samples),
+        "out/alleles.fasta",
+        "out/aa_unaln.fasta",
+        "out/aa_aln.fasta",
+        "out/aa_changes.tsv",
+        "out/aa_changes_corrected.fasta"
 
 rule blastn:
   input:
@@ -40,11 +41,12 @@ rule blastn:
     """
 
 rule summary_blast:
-  input: "out/blast/"
+  input:
+    expand("out/blast/{sample}.tsv", sample=samples)
   output: "out/blastoutput.tsv"
   log: "out/logs/summary_blastout.log"
   shell:
-    "python workflow/scripts/summary_blastout.py --out-dir {input} --out-file {output}"
+    "python workflow/scripts/summary_blastout.py --out-dir out/blast --out-file {output}"
 
 rule summary_alleles:
   input:
@@ -79,12 +81,10 @@ rule compare_aa_changes:
 
 rule correct_aa_alleles:
   input:
-    df="out/aa_changes.tsv",
-    fasta="out/alleles.fasta"
-  output:
-    fasta_aa="out/alleles_aa.fasta",
-    summary="out/summary_allele_mapping.csv"
+    df="out/aa_changes.tsv"
+  output:"out/aa_changes_corrected.fasta"
   log: "out/logs/correct_alleles.log"
   conda: "envs/blast.yml"
   shell:
-    "python workflow/scripts/correct_alleles.py --aa-changes {input.df} --input-fasta {input.fasta} --output-fasta {output.fasta_aa} --summary-out {output.summary} --update-aa-changes"
+    "python workflow/scripts/correct_alleles.py --aa-changes {input.df} --out {output}"
+
