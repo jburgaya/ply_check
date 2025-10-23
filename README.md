@@ -28,3 +28,9 @@ Then  run snakemake as:
 | ``aa_changes.tsv``    | Initial ply allele assignment    |
 | ``aa_changes_corrected.tsv``    | Corrected ply allele assignment    |
 
+The ``aa_aln_corrected.fasta`` can be used with IQTREE to generate a phylogenetic tree as in:
+
+``iqtree -s out/aa_aln_corrected.fasta -m MFP -bb 1000``
+
+# Author
+Judit Burgaya, judit.burgaya@gmail.com | judit.burgayaventura@unibe.ch
