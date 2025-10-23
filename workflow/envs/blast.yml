@@ -1,0 +1,8 @@
+channels:
+ - bioconda
+ - conda-forge
+ - defaults
+dependencies:
+ - blast
+ - libgcc-ng=11.2.0
+ - Bio

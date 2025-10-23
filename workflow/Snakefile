@@ -1,0 +1,90 @@
+from snakemake.utils import validate
+import pandas as pd
+import os
+
+
+# ----- load config file ----- #
+
+configfile: "config/config.yml"
+
+# ----- define functions ----- #
+
+def _read_samples(infile):
+  m = pd.read_csv(infile, sep='\t', index_col=0, header=None)
+  return set(m.index)
+
+samples = _read_samples(config["samples"])
+
+# ----- start execution of the rules ----- #
+
+rule all:
+  input:
+    expand("out/blast/{sample}.tsv", sample=samples),
+    "out/alleles.fasta",
+    "out/aa_unaln.fasta",
+    "out/aa_aln.fasta",
+    "out/aa_changes.tsv"
+
+rule blastn:
+  input:
+    db="db/ply_alleles.fasta",
+    nucl=lambda wildcards: config["fastas"] + wildcards.sample + ".fasta"
+  output:
+    blast="out/blast/{sample}.tsv"
+  threads: 4
+  log: "out/logs/blast_{sample}.log"
+  conda: "envs/blast.yml"
+  shell:
+    """
+    blastn -query {input.db} -subject {input.nucl} -out {output.blast} -outfmt "6 qseqid sseqid pident length qstart qend sstart send" -max_target_seqs 1 -perc_identity 95
+    """
+
+rule summary_blast:
+  input: "out/blast/"
+  output: "out/blastoutput.tsv"
+  log: "out/logs/summary_blastout.log"
+  shell:
+    "python workflow/scripts/summary_blastout.py --out-dir {input} --out-file {output}"
+
+rule summary_alleles:
+  input:
+    summary="out/blastoutput.tsv",
+    fastas="data/fastas"
+  output: "out/alleles.fasta"
+  log: "out/logs/summary_alleles.log"
+  shell:
+    "python workflow/scripts/summary_alleles.py --hits-file {input.summary} --fasta-dir {input.fastas} --output-fasta {output}"
+
+rule align_alleles_aa:
+  input:
+    db="db/ply_alleles.fasta",
+    alleles="out/alleles.fasta"
+  output:
+    unaln="out/aa_unaln.fasta",
+    aln="out/aa_aln.fasta"
+  log: "out/logs/mafft.log"
+  conda: "envs/mafft.yml"
+  shell:
+    "python workflow/scripts/mafft.py --db-fasta {input.db} --assigned-fasta {input.alleles} --output-aa-fasta {output.unaln} --output-aln {output.aln}"
+
+rule compare_aa_changes:
+  input: "out/aa_aln.fasta"
+  output: "out/aa_changes.tsv"
+  params:
+    ply_ref = "ply-1"
+  log: "out/logs/compare_aa.log"
+  conda: "envs/blast.yml"
+  shell:
+    "python workflow/scripts/compare_aa_changes.py --aln {input} --ref {params.ply_ref} --output {output}"
+
+rule correct_aa_alleles:
+  input:
+    df="out/aa_changes.tsv",
+    fasta="out/alleles.fasta"
+  output:
+    fasta_aa="out/alleles_aa.fasta",
+    summary="out/summary_allele_mapping.csv"
+  log: "out/logs/correct_alleles.log"
+  conda: "envs/blast.yml"
+  shell:
+    "python workflow/scripts/correct_alleles.py --aa-changes {input.df} --input-fasta {input.fasta} --output-fasta {output.fasta_aa} --summary-out {output.summary} --update-aa-changes"
