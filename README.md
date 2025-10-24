@@ -6,7 +6,7 @@ Annotate ply alleles
 
 ``db/ply_alleles.fasta``: allele sequences to be used in the pipeline
 
-Currently known alleles are 20 (https://doi.org/10.1371/journal.pone.0134055)[https://doi.org/10.1371/journal.pone.0134055], but the sequences for ply-14 and ply-20 are not available yet in the db.
+Currently known alleles are [20](https://doi.org/10.1371/journal.pone.0134055), but the sequences for ply-14 and ply-20 are not available yet in the db.
 
 # Usage
 
