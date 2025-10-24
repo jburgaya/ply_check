@@ -51,7 +51,7 @@ rule summary_blast:
 rule summary_alleles:
   input:
     summary="out/blastoutput.tsv",
-    fastas="data/fastas"
+    fastas=config["fastas"]
   output: "out/alleles.fasta"
   log: "out/logs/summary_alleles.log"
   shell:
